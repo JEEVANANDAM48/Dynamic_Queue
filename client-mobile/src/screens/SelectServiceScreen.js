@@ -76,26 +76,38 @@ export default function SelectServiceScreen({ centre, onTokenGenerated, onBack }
         </View>
       )}
 
-      {services.map((service) => (
-        <TouchableOpacity
-          key={service._id}
-          style={styles.serviceCard}
-          onPress={() => handleGenerateToken(service)}
-          disabled={generating}
-        >
-          <View style={styles.badgePrefix}>
-            <Text style={styles.badgePrefixText}>{service.code}</Text>
-          </View>
-          <View style={styles.infoCol}>
-            <Text style={styles.serviceName}>{service.name}</Text>
-            <Text style={styles.serviceDesc}>{service.description || 'Standard Service Desk'}</Text>
-            <Text style={styles.durationText}>
-              ⏱️ Default Duration: ~{service.defaultDurationMinutes || 10} mins
-            </Text>
-          </View>
-          <Text style={styles.buttonGenerateText}>Get Token &rarr;</Text>
-        </TouchableOpacity>
-      ))}
+      {services.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>No Services Available</Text>
+          <Text style={styles.emptyText}>
+            No service categories are currently active for this centre.
+          </Text>
+          <TouchableOpacity style={styles.buttonRetry} onPress={fetchServices}>
+            <Text style={styles.buttonRetryText}>Retry Loading</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        services.map((service) => (
+          <TouchableOpacity
+            key={service._id}
+            style={styles.serviceCard}
+            onPress={() => handleGenerateToken(service)}
+            disabled={generating}
+          >
+            <View style={styles.badgePrefix}>
+              <Text style={styles.badgePrefixText}>{service.code}</Text>
+            </View>
+            <View style={styles.infoCol}>
+              <Text style={styles.serviceName}>{service.name}</Text>
+              <Text style={styles.serviceDesc}>{service.description || 'Standard Service Desk'}</Text>
+              <Text style={styles.durationText}>
+                ⏱️ Default Duration: ~{service.defaultDurationMinutes || 10} mins
+              </Text>
+            </View>
+            <Text style={styles.buttonGenerateText}>Get Token &rarr;</Text>
+          </TouchableOpacity>
+        ))
+      )}
 
       <TouchableOpacity style={styles.buttonBack} onPress={onBack} disabled={generating}>
         <Text style={styles.buttonBackText}>Back to Centres</Text>
@@ -211,6 +223,38 @@ const styles = StyleSheet.create({
   },
   buttonBackText: {
     color: '#334155',
+    fontWeight: '700',
+    fontSize: 13
+  },
+  emptyContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 6
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 16
+  },
+  buttonRetry: {
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12
+  },
+  buttonRetryText: {
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 13
   }

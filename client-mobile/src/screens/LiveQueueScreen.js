@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert
 } from 'react-native';
 import api from '../services/api';
-import { getSocket, subscribeToToken } from '../services/socket';
+import { getSocket, subscribeToToken, subscribeToServiceCentre } from '../services/socket';
 import { AuthContext } from '../context/AuthContext';
 
 export default function LiveQueueScreen({ tokenId, onBack, onTokenCancelled }) {
@@ -19,28 +19,38 @@ export default function LiveQueueScreen({ tokenId, onBack, onTokenCancelled }) {
   const [cancelling, setCancelling] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
 
+  const tokenIdRef = useRef(tokenId);
+  tokenIdRef.current = tokenId;
+
   useEffect(() => {
     fetchTokenDetails();
   }, [tokenId]);
 
+  // Handle room joining
+  useEffect(() => {
+    if (tokenId) {
+      subscribeToToken(tokenId);
+    }
+    if (token?.serviceCentreId) {
+      const centreId = typeof token.serviceCentreId === 'object' ? token.serviceCentreId._id : token.serviceCentreId;
+      subscribeToServiceCentre(centreId);
+    }
+  }, [tokenId, token?.serviceCentreId]);
+
+  // Handle socket event subscriptions
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
-    if (tokenId) {
-      subscribeToToken(tokenId);
-    }
+    const handleConnect = () => {
+      setIsConnected(true);
+      fetchTokenDetails();
+    };
 
-    if (token && token.serviceCentreId) {
-      const centreId = typeof token.serviceCentreId === 'object' ? token.serviceCentreId._id : token.serviceCentreId;
-      socket.emit('joinServiceCentre', centreId);
-    }
-
-    const handleConnect = () => setIsConnected(true);
     const handleDisconnect = () => setIsConnected(false);
 
     const handleTokenUpdated = (updatedData) => {
-      if (updatedData.tokenId === tokenId || (token && updatedData.tokenId === token._id)) {
+      if (updatedData.tokenId === tokenIdRef.current) {
         setToken((prev) => prev ? {
           ...prev,
           estimatedWaitMinutes: updatedData.estimatedWaitMinutes ?? prev.estimatedWaitMinutes,
@@ -63,7 +73,7 @@ export default function LiveQueueScreen({ tokenId, onBack, onTokenCancelled }) {
     socket.on('serviceStarted', handleQueueChanged);
     socket.on('serviceCompleted', handleQueueChanged);
 
-    // Auto-refresh interval (every 3 seconds) for guaranteed synchronization
+    // Guaranteed polling interval (every 3s)
     const syncInterval = setInterval(() => {
       fetchTokenDetails();
     }, 3000);
@@ -78,7 +88,7 @@ export default function LiveQueueScreen({ tokenId, onBack, onTokenCancelled }) {
       socket.off('serviceStarted', handleQueueChanged);
       socket.off('serviceCompleted', handleQueueChanged);
     };
-  }, [tokenId, token]);
+  }, []);
 
   const fetchTokenDetails = async () => {
     if (!tokenId) return;

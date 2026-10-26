@@ -46,23 +46,33 @@ export default function SelectCentreScreen({ onSelectCentre, onBack }) {
         <Text style={styles.subtitle}>Step 1 of 2: Choose your location</Text>
       </View>
 
-      {centres.map((centre) => (
-        <TouchableOpacity
-          key={centre._id}
-          style={styles.centreCard}
-          onPress={() => onSelectCentre(centre)}
-        >
-          <View style={styles.iconBg}>
-            <Text style={styles.iconText}>🏢</Text>
-          </View>
-          <View style={styles.infoCol}>
-            <Text style={styles.centreName}>{centre.name}</Text>
-            <Text style={styles.centreAddress}>{centre.address || 'Central Office'}</Text>
-            <Text style={styles.centreCode}>CODE: {centre.code}</Text>
-          </View>
-          <Text style={styles.arrow}>&rarr;</Text>
-        </TouchableOpacity>
-      ))}
+      {centres.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>No Service Centres Available</Text>
+          <Text style={styles.emptySubtitle}>Please check back shortly or tap below to refresh.</Text>
+          <TouchableOpacity style={styles.refreshBtn} onPress={fetchCentres}>
+            <Text style={styles.refreshBtnText}>Refresh List</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        centres.map((centre) => (
+          <TouchableOpacity
+            key={centre._id}
+            style={styles.centreCard}
+            onPress={() => onSelectCentre(centre)}
+          >
+            <View style={styles.iconBg}>
+              <Text style={styles.iconText}>🏢</Text>
+            </View>
+            <View style={styles.infoCol}>
+              <Text style={styles.centreName}>{centre.name}</Text>
+              <Text style={styles.centreAddress}>{centre.address || 'Central Office'}</Text>
+              <Text style={styles.centreCode}>CODE: {centre.code}</Text>
+            </View>
+            <Text style={styles.arrow}>&rarr;</Text>
+          </TouchableOpacity>
+        ))
+      )}
 
       <TouchableOpacity style={styles.buttonBack} onPress={onBack}>
         <Text style={styles.buttonBackText}>Back to Dashboard</Text>
@@ -163,5 +173,37 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontWeight: '700',
     fontSize: 13
+  },
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 14
+  },
+  refreshBtn: {
+    backgroundColor: '#0F172A',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10
+  },
+  refreshBtnText: {
+    color: '#38BDF8',
+    fontWeight: '700',
+    fontSize: 12
   }
 });

@@ -3,22 +3,42 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-const getBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+/**
+ * Normalizes and resolves the API base URL for Expo Customer App
+ * - Prioritizes EXPO_PUBLIC_API_URL
+ * - In production/standalone builds, defaults to live Render backend
+ * - Strips trailing slashes and normalizes /api prefix
+ */
+const resolveApiUrl = () => {
+  let envUrl = process.env.EXPO_PUBLIC_API_URL;
+
+  if (!envUrl) {
+    if (__DEV__ && Platform.OS !== 'web') {
+      const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost || Constants.manifest2?.extra?.expoClient?.hostUri;
+      if (hostUri) {
+        const ip = hostUri.split(':')[0];
+        envUrl = `http://${ip}:5000/api`;
+      }
+    }
   }
-  if (Platform.OS === 'web') {
-    return 'http://localhost:5000/api';
+
+  // Deployed production default
+  if (!envUrl || (!__DEV__ && envUrl.includes('localhost'))) {
+    envUrl = 'https://dynamic-queue-r6bt.onrender.com/api';
   }
-  const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost || Constants.manifest2?.extra?.expoClient?.hostUri;
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
-    return `http://${ip}:5000/api`;
+
+  // Strip trailing slashes
+  envUrl = envUrl.replace(/\/+$/, '');
+
+  // Normalize /api suffix
+  if (!envUrl.endsWith('/api')) {
+    envUrl = `${envUrl}/api`;
   }
-  return 'http://localhost:5000/api';
+
+  return envUrl;
 };
 
-const API_URL = getBaseUrl();
+const API_URL = resolveApiUrl();
 console.log('[Mobile API Base URL]', API_URL);
 
 const api = axios.create({
@@ -29,6 +49,7 @@ const api = axios.create({
   timeout: 15000
 });
 
+// Attach JWT Bearer token to requests
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -37,13 +58,14 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (e) {
-      // AsyncStorage read error
+      console.warn('[API Interceptor] Failed to retrieve token from storage', e);
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// Response interceptor: handle 401 token expiry safely
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

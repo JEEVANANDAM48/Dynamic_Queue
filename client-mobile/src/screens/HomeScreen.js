@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import { getSocket, subscribeToUser } from '../services/socket';
 
 export default function HomeScreen({
   onGenerateTokenPress,
@@ -24,12 +25,45 @@ export default function HomeScreen({
 
   useEffect(() => {
     fetchActiveCustomerToken();
+
+    const socket = getSocket();
+    if (socket && user && user._id) {
+      subscribeToUser(user._id);
+
+      const handleLiveUpdate = () => {
+        fetchActiveCustomerToken();
+      };
+
+      socket.on('userTokenUpdated', handleLiveUpdate);
+      socket.on('tokenUpdated', handleLiveUpdate);
+      socket.on('tokenCalled', handleLiveUpdate);
+      socket.on('serviceStarted', handleLiveUpdate);
+      socket.on('serviceCompleted', handleLiveUpdate);
+      socket.on('queueUpdated', handleLiveUpdate);
+
+      return () => {
+        socket.off('userTokenUpdated', handleLiveUpdate);
+        socket.off('tokenUpdated', handleLiveUpdate);
+        socket.off('tokenCalled', handleLiveUpdate);
+        socket.off('serviceStarted', handleLiveUpdate);
+        socket.off('serviceCompleted', handleLiveUpdate);
+        socket.off('queueUpdated', handleLiveUpdate);
+      };
+    }
+  }, [user]);
+
+  // Periodic background refresh for guarantee
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchActiveCustomerToken();
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchActiveCustomerToken = async () => {
     try {
       const res = await api.get('/tokens/customer/me');
-      if (res.data.success && res.data.data.length > 0) {
+      if (res.data && res.data.success && res.data.data.length > 0) {
         // Find first active token (WAITING, CALLED, SERVING)
         const active = res.data.data.find(
           t => t.status === 'WAITING' || t.status === 'CALLED' || t.status === 'SERVING'

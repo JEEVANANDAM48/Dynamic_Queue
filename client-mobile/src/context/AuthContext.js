@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
+import { disconnectSocket } from '../services/socket';
 
 export const AuthContext = createContext();
 
@@ -17,7 +18,7 @@ export const AuthProvider = ({ children }) => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         const res = await api.get('/auth/me');
-        if (res.data.success) {
+        if (res.data && res.data.success) {
           setUser(res.data.data);
         } else {
           await AsyncStorage.removeItem('token');
@@ -31,29 +32,52 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password });
-    if (res.data.success) {
-      const userData = res.data.data;
-      await AsyncStorage.setItem('token', userData.token);
-      setUser(userData);
-      return userData;
+    try {
+      const res = await api.post('/auth/login', {
+        email: (email || '').trim().toLowerCase(),
+        password
+      });
+
+      if (res.data && res.data.success) {
+        const userData = res.data.data;
+        await AsyncStorage.setItem('token', userData.token);
+        setUser(userData);
+        return userData;
+      }
+      throw new Error(res.data?.message || 'Login failed');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Login failed';
+      throw new Error(msg);
     }
-    throw new Error(res.data.message || 'Login failed');
   };
 
   const register = async (name, email, password) => {
-    const res = await api.post('/auth/register', { name, email, password, role: 'CUSTOMER' });
-    if (res.data.success) {
-      const userData = res.data.data;
-      await AsyncStorage.setItem('token', userData.token);
-      setUser(userData);
-      return userData;
+    try {
+      const res = await api.post('/auth/register', {
+        name: (name || '').trim(),
+        email: (email || '').trim().toLowerCase(),
+        password,
+        role: 'CUSTOMER'
+      });
+
+      if (res.data && res.data.success) {
+        const userData = res.data.data;
+        await AsyncStorage.setItem('token', userData.token);
+        setUser(userData);
+        return userData;
+      }
+      throw new Error(res.data?.message || 'Registration failed');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Registration failed';
+      throw new Error(msg);
     }
-    throw new Error(res.data.message || 'Registration failed');
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('token');
+    try {
+      await AsyncStorage.removeItem('token');
+    } catch (e) {}
+    disconnectSocket();
     setUser(null);
   };
 
