@@ -30,38 +30,43 @@ const StaffDashboard = () => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
-    fetchStaffQueueState();
+    fetchStaffQueueState(true);
   }, []);
 
+  const centreId = counter?.serviceCentreId
+    ? (typeof counter.serviceCentreId === 'object' ? counter.serviceCentreId._id : counter.serviceCentreId)
+    : null;
+
   useEffect(() => {
-    if (counter && counter.serviceCentreId) {
-      const centreId = typeof counter.serviceCentreId === 'object'
-        ? counter.serviceCentreId._id
-        : counter.serviceCentreId;
+    if (centreId) {
       joinServiceCentreRoom(centreId);
     }
-  }, [counter]);
+  }, [centreId]);
 
   useEffect(() => {
     const handleQueueUpdate = () => {
-      fetchStaffQueueState();
+      fetchStaffQueueState(false);
     };
 
     if (socket) {
       socket.on('queueUpdated', handleQueueUpdate);
       socket.on('tokenCalled', handleQueueUpdate);
+      socket.on('serviceStarted', handleQueueUpdate);
+      socket.on('serviceCompleted', handleQueueUpdate);
     }
 
-    // Auto-poll every 3s to guarantee live sync even if socket reconnects
+    // Auto-poll every 5s in background without flickering UI
     const pollInterval = setInterval(() => {
-      fetchStaffQueueState();
-    }, 3000);
+      fetchStaffQueueState(false);
+    }, 5000);
 
     return () => {
       clearInterval(pollInterval);
       if (socket) {
         socket.off('queueUpdated', handleQueueUpdate);
         socket.off('tokenCalled', handleQueueUpdate);
+        socket.off('serviceStarted', handleQueueUpdate);
+        socket.off('serviceCompleted', handleQueueUpdate);
       }
     };
   }, [socket]);
@@ -88,9 +93,9 @@ const StaffDashboard = () => {
     };
   }, [currentToken]);
 
-  const fetchStaffQueueState = async () => {
+  const fetchStaffQueueState = async (isInitial = false) => {
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const res = await api.get('/staff/queue-state');
       if (res.data.success) {
         setCounter(res.data.data.counter);
@@ -101,7 +106,7 @@ const StaffDashboard = () => {
       console.error('Failed to fetch staff queue state', err);
       setMessage(err.response?.data?.message || 'Error loading counter queue data');
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
