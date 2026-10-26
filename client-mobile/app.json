@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Dynamic Queue",
+    "slug": "dynamic-queue-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dynamicqueue.customer"
+    },
+    "android": {
+      "package": "com.dynamicqueue.customer",
+      "backgroundColor": "#0F172A",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      }
+    },
+    "plugins": [
+      "expo-status-bar"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+web-build/
+
+# Expo
+.expo/
+.expo-shared/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+*.timestamp-*.mjs
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
