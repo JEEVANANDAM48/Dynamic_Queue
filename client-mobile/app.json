@@ -18,6 +18,12 @@
     },
     "plugins": [
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "637c1266-7514-4940-bca2-4bf7d29f1c51"
+      }
+    },
+    "owner": "jeevanandam"
   }
 }
