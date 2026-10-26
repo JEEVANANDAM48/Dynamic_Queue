@@ -97,12 +97,26 @@ const healthHandler = (req, res) => {
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 
-// API Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/tokens', require('./routes/tokenRoutes'));
-app.use('/api/queues', require('./routes/queueRoutes'));
-app.use('/api/staff', require('./routes/staffRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+// Route modules
+const authRoutes = require('./routes/authRoutes');
+const tokenRoutes = require('./routes/tokenRoutes');
+const queueRoutes = require('./routes/queueRoutes');
+const staffRoutes = require('./routes/staffRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+
+// Primary /api route mounts
+app.use('/api/auth', authRoutes);
+app.use('/api/tokens', tokenRoutes);
+app.use('/api/queues', queueRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Root fallback mounts (prevents 404 if client makes requests without /api prefix)
+app.use('/auth', authRoutes);
+app.use('/tokens', tokenRoutes);
+app.use('/queues', queueRoutes);
+app.use('/staff', staffRoutes);
+app.use('/admin', adminRoutes);
 
 // 404 Handler for unknown routes
 app.use((req, res) => {

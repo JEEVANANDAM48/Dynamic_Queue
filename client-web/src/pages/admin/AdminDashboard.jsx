@@ -10,13 +10,15 @@ import {
   Monitor,
   Plus,
   BarChart3,
-  ListFilter
+  ListFilter,
+  Sparkles
 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('analytics'); // analytics | centres | services | counters | staff | history
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
 
   // Data state
   const [centres, setCentres] = useState([]);
@@ -29,6 +31,20 @@ const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'centre' | 'service' | 'counter' | 'staff'
   const [formData, setFormData] = useState({});
+
+  const handleSeedDemoData = async () => {
+    if (!window.confirm('Initialize or refresh demo data (City Service Centre, Counters 1-3, Services A-C, Staff accounts)?')) return;
+    setSeeding(true);
+    try {
+      const res = await api.post('/admin/seed-demo', { forceReset: false });
+      alert(res.data.message || 'Demo data initialized successfully!');
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error initializing demo data');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -134,6 +150,16 @@ const AdminDashboard = () => {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={handleSeedDemoData}
+            disabled={seeding}
+            title="Initialize demo data"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-800 hover:bg-amber-500/30 border border-amber-400/40 transition disabled:opacity-50"
+          >
+            <Sparkles size={14} className="text-amber-600" />
+            <span>{seeding ? 'Seeding...' : 'Seed Demo Data'}</span>
+          </button>
         </div>
       </div>
 

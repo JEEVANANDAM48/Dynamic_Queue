@@ -211,6 +211,18 @@ const getServiceRecords = async (req, res) => {
   }
 };
 
+const { seedDemoData } = require('../services/seedService');
+
+// Seed Demo Environment
+const seedDemo = async (req, res) => {
+  try {
+    const result = await seedDemoData(req.body && req.body.forceReset === true);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAnalytics,
   getUsers,
@@ -223,5 +235,6 @@ module.exports = {
   getCounters,
   createCounter,
   updateCounter,
-  getServiceRecords
+  getServiceRecords,
+  seedDemo
 };

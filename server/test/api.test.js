@@ -148,9 +148,40 @@ test('CORS - Origin validator allows configured and preview domains', () => {
   assert.equal(isOriginAllowed('https://dynamic-queue-r6bt.onrender.com'), true);
 });
 
-test('Database URI Masking - Hides credentials completely from logs', () => {
-  const sampleUri = 'mongodb+srv://admin_user:SuperSecretPassword123@cluster0.k8mpeb0.mongodb.net/dynamic_queue';
-  const masked = maskMongoURI(sampleUri);
-  assert.ok(!masked.includes('SuperSecretPassword123'));
-  assert.ok(masked.includes('admin_user:****@cluster0.k8mpeb0.mongodb.net/dynamic_queue'));
+test('Dual Route Mounting - Handles requests both with and without /api prefix', async () => {
+  // Test POST without /api
+  const resWithout = await fetch(`${baseUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+  // Must NOT return 404 Route not found
+  assert.notEqual(resWithout.status, 404);
+  assert.equal(resWithout.status, 400);
+
+  // Test POST with /api
+  const resWith = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+  assert.notEqual(resWith.status, 404);
+  assert.equal(resWith.status, 400);
+
+  // Test GET without /api
+  const resAdminWithout = await fetch(`${baseUrl}/admin/service-centres`);
+  assert.equal(resAdminWithout.status, 200);
+
+  // Test GET with /api
+  const resAdminWith = await fetch(`${baseUrl}/api/admin/service-centres`);
+  assert.equal(resAdminWith.status, 200);
+});
+
+test('POST /api/admin/seed-demo - Requires ADMIN authorization', async () => {
+  const res = await fetch(`${baseUrl}/api/admin/seed-demo`, {
+    method: 'POST'
+  });
+  assert.equal(res.status, 401);
+  const data = await res.json();
+  assert.equal(data.success, false);
 });

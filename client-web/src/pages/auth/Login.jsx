@@ -24,10 +24,17 @@ const Login = () => {
       } else if (userData.role === 'STAFF') {
         navigate('/staff');
       } else {
-        navigate('/staff');
+        navigate('/display/demo');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password. Please check credentials or register.');
+      const apiMessage = err.response?.data?.message || err.message;
+      if (err.response?.status === 404 || apiMessage === 'Route not found') {
+        setError('Cannot reach login service. The server may be restarting or updating.');
+      } else if (err.response?.status === 401 || apiMessage === 'Invalid email or password') {
+        setError('Invalid email or password. Please verify credentials or create an account.');
+      } else {
+        setError(apiMessage || 'Login failed. Please check network and try again.');
+      }
     } finally {
       setLoading(false);
     }

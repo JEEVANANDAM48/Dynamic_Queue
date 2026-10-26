@@ -3,7 +3,19 @@ import { io } from 'socket.io-client';
 
 export const SocketContext = createContext();
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const resolveSocketUrl = () => {
+  let envUrl = import.meta.env.VITE_SOCKET_URL;
+  const isBrowser = typeof window !== 'undefined';
+  const isDeployedHost = isBrowser && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
+  if (!envUrl || (isDeployedHost && envUrl.includes('localhost'))) {
+    envUrl = 'https://dynamic-queue-r6bt.onrender.com';
+  }
+
+  return envUrl.replace(/\/+$/, '');
+};
+
+const SOCKET_URL = resolveSocketUrl();
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);

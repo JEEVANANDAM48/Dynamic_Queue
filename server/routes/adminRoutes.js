@@ -12,7 +12,8 @@ const {
   getCounters,
   createCounter,
   updateCounter,
-  getServiceRecords
+  getServiceRecords,
+  seedDemo
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -37,5 +38,6 @@ router.post('/counters', createCounter);
 router.put('/counters/:id', updateCounter);
 
 router.get('/service-records', getServiceRecords);
+router.post('/seed-demo', seedDemo);
 
 module.exports = router;

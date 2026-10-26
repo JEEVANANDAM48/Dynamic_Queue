@@ -1,6 +1,33 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+/**
+ * Robust API Base URL Resolver
+ * - Handles both http://... and https://...
+ * - Gracefully appends /api if omitted in Vercel environment variables
+ * - Safeguards against deployed Vercel frontend falling back to localhost
+ */
+const resolveApiUrl = () => {
+  let envUrl = import.meta.env.VITE_API_URL;
+
+  const isBrowser = typeof window !== 'undefined';
+  const isDeployedHost = isBrowser && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
+  if (!envUrl || (isDeployedHost && envUrl.includes('localhost'))) {
+    envUrl = 'https://dynamic-queue-r6bt.onrender.com/api';
+  }
+
+  // Strip trailing slashes
+  envUrl = envUrl.replace(/\/+$/, '');
+
+  // Normalize /api suffix
+  if (!envUrl.endsWith('/api')) {
+    envUrl = `${envUrl}/api`;
+  }
+
+  return envUrl;
+};
+
+const API_URL = resolveApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
