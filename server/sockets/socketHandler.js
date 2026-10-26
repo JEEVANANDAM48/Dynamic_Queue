@@ -1,24 +1,29 @@
 const socketIo = require('socket.io');
+const { isOriginAllowed } = require('../config/corsConfig');
 
 let io;
 
 const initSockets = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE']
-    }
+      origin: (origin, callback) => {
+        if (isOriginAllowed(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Socket CORS blocked origin: ${origin}`));
+      },
+      methods: ['GET', 'POST', 'PUT', 'DELETE'],
+      credentials: true
+    },
+    transports: ['websocket', 'polling']
   });
 
   io.on('connection', (socket) => {
-    console.log(`[Socket.IO] Client connected: ${socket.id}`);
-
     // Join Service Centre room for live display & queue updates
     socket.on('joinServiceCentre', (serviceCentreId) => {
       if (serviceCentreId) {
         const roomName = `serviceCentre:${serviceCentreId}`;
         socket.join(roomName);
-        console.log(`[Socket.IO] Socket ${socket.id} joined room ${roomName}`);
       }
     });
 
@@ -27,21 +32,19 @@ const initSockets = (server) => {
       if (tokenId) {
         const roomName = `token:${tokenId}`;
         socket.join(roomName);
-        console.log(`[Socket.IO] Socket ${socket.id} joined room ${roomName}`);
       }
     });
 
-    // Join user room
+    // Join user room for personal notifications
     socket.on('joinUserRoom', (userId) => {
       if (userId) {
         const roomName = `user:${userId}`;
         socket.join(roomName);
-        console.log(`[Socket.IO] Socket ${socket.id} joined room ${roomName}`);
       }
     });
 
     socket.on('disconnect', () => {
-      console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+      // Clean disconnect
     });
   });
 

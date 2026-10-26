@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Token = require('../models/Token');
 const Counter = require('../models/Counter');
 const ServiceRecord = require('../models/ServiceRecord');
@@ -17,6 +18,10 @@ const getStaffQueueState = async (req, res) => {
     const counterId = req.user.counterId || req.query.counterId;
     if (!counterId) {
       return res.status(400).json({ success: false, message: 'No counter assigned to staff user' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(counterId)) {
+      return res.status(400).json({ success: false, message: 'Invalid counter ID format' });
     }
 
     const counter = await Counter.findById(counterId)
@@ -79,6 +84,10 @@ const callNextToken = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Counter ID is required' });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(counterId)) {
+      return res.status(400).json({ success: false, message: 'Invalid counter ID format' });
+    }
+
     const counter = await Counter.findById(counterId);
     if (!counter) {
       return res.status(404).json({ success: false, message: 'Counter not found' });
@@ -87,6 +96,9 @@ const callNextToken = async (req, res) => {
     // If specific token ID provided, call that; otherwise call next WAITING token
     let token;
     if (req.params.id) {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ success: false, message: 'Invalid token ID format' });
+      }
       token = await Token.findById(req.params.id);
     } else {
       token = await Token.findOne({
@@ -139,9 +151,13 @@ const callNextToken = async (req, res) => {
 // @access  Private (Staff)
 const startService = async (req, res) => {
   try {
-    const { tokenId } = req.body;
+    const tokenId = req.body.tokenId || req.body.id;
 
-    const token = await Token.findById(tokenId || req.body.id);
+    if (!tokenId || !mongoose.Types.ObjectId.isValid(tokenId)) {
+      return res.status(400).json({ success: false, message: 'A valid tokenId is required' });
+    }
+
+    const token = await Token.findById(tokenId);
     if (!token) {
       return res.status(404).json({ success: false, message: 'Token not found' });
     }
@@ -189,9 +205,13 @@ const startService = async (req, res) => {
 // @access  Private (Staff)
 const completeService = async (req, res) => {
   try {
-    const { tokenId } = req.body;
+    const tokenId = req.body.tokenId || req.body.id;
 
-    const token = await Token.findById(tokenId || req.body.id);
+    if (!tokenId || !mongoose.Types.ObjectId.isValid(tokenId)) {
+      return res.status(400).json({ success: false, message: 'A valid tokenId is required' });
+    }
+
+    const token = await Token.findById(tokenId);
     if (!token) {
       return res.status(404).json({ success: false, message: 'Token not found' });
     }
@@ -267,6 +287,10 @@ const completeService = async (req, res) => {
 // @access  Private (Staff)
 const markNoShow = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid token ID format' });
+    }
+
     const token = await Token.findById(req.params.id);
     if (!token) {
       return res.status(404).json({ success: false, message: 'Token not found' });
@@ -293,6 +317,10 @@ const markNoShow = async (req, res) => {
 // @access  Private (Staff)
 const skipToken = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid token ID format' });
+    }
+
     const token = await Token.findById(req.params.id);
     if (!token) {
       return res.status(404).json({ success: false, message: 'Token not found' });
@@ -321,6 +349,10 @@ const skipToken = async (req, res) => {
 // @access  Private (Staff)
 const recallToken = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid token ID format' });
+    }
+
     const token = await Token.findById(req.params.id).populate('counterId');
     if (!token) {
       return res.status(404).json({ success: false, message: 'Token not found' });

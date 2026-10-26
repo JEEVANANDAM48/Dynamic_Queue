@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Token = require('../models/Token');
 const Service = require('../models/Service');
 const ServiceCentre = require('../models/ServiceCentre');
@@ -32,6 +33,10 @@ const createToken = async (req, res) => {
 
     if (!serviceId || !serviceCentreId) {
       return res.status(400).json({ success: false, message: 'serviceId and serviceCentreId are required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(serviceId) || !mongoose.Types.ObjectId.isValid(serviceCentreId)) {
+      return res.status(400).json({ success: false, message: 'Invalid serviceId or serviceCentreId format' });
     }
 
     const service = await Service.findById(serviceId);
@@ -93,6 +98,10 @@ const createToken = async (req, res) => {
 // @access  Public / Private
 const getTokenById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid token ID format' });
+    }
+
     const token = await Token.findById(req.params.id)
       .populate('serviceId', 'name code description')
       .populate('serviceCentreId', 'name code address')
@@ -130,10 +139,22 @@ const getMyTokens = async (req, res) => {
 // @access  Private (Customer / Admin)
 const cancelToken = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid token ID format' });
+    }
+
     const token = await Token.findById(req.params.id);
 
     if (!token) {
       return res.status(404).json({ success: false, message: 'Token not found' });
+    }
+
+    // Role check: Only the token owner or Staff/Admin can cancel the token
+    if (
+      req.user.role === 'CUSTOMER' &&
+      token.customerId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({ success: false, message: 'Not authorized to cancel this token' });
     }
 
     if (token.status === 'COMPLETED' || token.status === 'CANCELLED') {
